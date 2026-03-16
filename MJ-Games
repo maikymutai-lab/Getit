@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MJ: Mike & Juls - Breakdance Battle RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: #0ff;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #000;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.95);
+            pointer-events: auto;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        h1 {
+            font-size: 6vw;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+        
+        .btn {
+            background: transparent;
+            border: 2px solid #0ff;
+            padding: 12px 30px;
+            margin: 8px;
+            font-size: 4vw;
+            color: #0ff;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+            transition: all 0.2s;
+            pointer-events: auto;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .btn:hover, .btn:active {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 20px #0ff;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            display: none;
+            justify-content: space-between;
+            font-size: 3vw;
+            color: #0ff;
+            text-shadow: 0 0 5px #0ff;
+        }
+        
+        .stat {
+            background: rgba(0,20,20,0.8);
+            padding: 5px 10px;
+            border: 1px solid #0ff;
+            border-radius: 3px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: none;
+            justify-content: space-between;
+            padding: 0 10px;
+            pointer-events: auto;
+        }
+        
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #0ff;
+            background: rgba(0,255,255,0.1);
+            color: #0ff;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+        }
+        
+        .control-btn:active {
+            background: #0ff;
+            color: #000;
+        }
+        
+        .control-btn.dance {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,0,255,0.2);
+            border-color: #f0f;
+            color: #f0f;
+            box-shadow: 0 0 15px rgba(255,0,255,0.3);
+        }
+        
+        #characterSelect, #levelSelect, #shop {
+            flex-wrap: wrap;
+            flex-direction: row;
+            align-content: center;
+        }
+        
+        .character-card, .level-btn, .shop-item {
+            background: rgba(0,20,20,0.8);
+            border: 1px solid #0ff;
+            margin: 5px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            color: #0ff;
+        }
+        
+        .character-card.selected {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 15px #0ff;
+        }
+        
+        .character-card.locked {
+            opacity: 0.3;
+            border-color: #666;
+            color: #666;
+        }
+        
+        .level-btn {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3vw;
+        }
+        
+        .level-btn.current {
+            background: #0ff;
+            color: #000;
+        }
+        
+        .shop-item {
+            width: 100px;
+            font-size: 2.5vw;
+        }
+        
+        .shop-item.owned {
+            border-color: #0f0;
+            color: #0f0;
+        }
+        
+        #adminPanel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.98);
+            z-index: 9999;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #adminPanel.active {
+            display: block;
+        }
+        
+        .admin-section {
+            border: 1px solid #f0f;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(20,0,20,0.8);
+        }
+        
+        .admin-section h3 {
+            color: #f0f;
+            margin-bottom: 10px;
+        }
+        
+        input, textarea {
+            background: #000;
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 5px;
+            margin: 5px;
+            font-family: monospace;
+            width: 90%;
+        }
+        
+        .hidden-trigger {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            opacity: 0;
+            z-index: 100;
+        }
+        
+        #victoryScreen h2 {
+            color: #0f0;
+            text-shadow: 0 0 20px #0f0;
+        }
+        
+        #gameOver h2 {
+            color: #f00;
+            text-shadow: 0 0 20px #f00;
+        }
+        
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,255,255,0.02) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9998;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <!-- Hidden Admin Trigger (tap top-right corner 5 times) -->
+        <div class="hidden-trigger" id="adminTrigger"></div>
+        
+        <!-- Main Menu -->
+        <div id="mainMenu" class="screen active">
+            <h1>◢ MJ: MIKE & JULS ◣</h1>
+            <p style="font-size: 3vw; margin-bottom: 20px; color: #f0f;">BREAKDANCE BATTLE SYSTEM v2.0</p>
+            <button class="btn" onclick="showScreen('characterSelect')">► INITIATE</button>
+            <button class="btn" onclick="showScreen('shop')">► ARSENAL</button>
+            <button class="btn" onclick="showScreen('settings')">► CONFIG</button>
+        </div>
+        
+        <!-- Character Select -->
+        <div id="characterSelect" class="screen">
+            <h2>◢ SELECT UNIT ◣</h2>
+            <div id="characterGrid"></div>
+            <button class="btn" onclick="showScreen('levelSelect')" style="margin-top: 20px;">► PROCEED</button>
+            <button class="btn" onclick="showScreen('mainMenu')">◄ BACK</button>
+        </div>
+        
+        <!-- Level Select -->
+        <div id="levelSelect" class="screen">
+            <h2>◢ SELECT STAGE ◣</h2>
+            <div id="levelGrid" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 90%;"></div>
+            <button class="btn" onclick="showScreen('characterSelect')" style="margin-top: 20px;">◄ BACK</button>
+        </div>
+        
+        <!-- Shop -->
+        <div id="shop" class="screen">
+            <h2>◢ ARSENAL ◣</h2>
+            <div style="font-size: 3vw; margin-bottom: 10px; color: #ff0;">CREDITS: <span id="shopCoins">0</span></div>
+            <div id="shopItems"></div>
+            <button class="btn" onclick="showScreen('mainMenu')">◄ BACK</button>
+        </div>
+        
+        <!-- Settings -->
+        <div id="settings" class="screen">
+            <h2>◢ CONFIG ◣</h2>
+            <button class="btn" onclick="toggleMusic()">AUDIO: <span id="musicStatus">ON</span></button>
+            <button class="btn" onclick="toggleSound()">SFX: <span id="soundStatus">ON</span></button>
+            <button class="btn" onclick="resetProgress()">⚠ RESET DATA</button>
+            <button class="btn" onclick="showScreen('mainMenu')">◄ BACK</button>
+        </div>
+        
+        <!-- HUD -->
+        <div id="hud">
+            <div class="stat">HP <span id="health">100</span></div>
+            <div class="stat">STAGE <span id="currentLevel">1</span></div>
+            <div class="stat">CR <span id="coins">0</span></div>
+            <div class="stat">COMBO <span id="combo">0</span></div>
+        </div>
+        
+        <!-- Controls -->
+        <div id="controls">
+            <div style="display: flex; gap: 10px;">
+                <div class="control-btn" onclick="move(-1)">◄</div>
+                <div class="control-btn" onclick="move(1)">►</div>
+            </div>
+            <div class="control-btn dance" onclick="dance()">◉</div>
+            <div style="display: flex; gap: 10px;">
+                <div class="control-btn" onclick="jump()">▲</div>
+                <div class="control-btn" onclick="attack()" style="border-color: #f00; color: #f00;">⚔</div>
+            </div>
+        </div>
+        
+        <!-- Victory -->
+        <div id="victoryScreen" class="screen">
+            <div style="font-size: 15vw; animation: pulse 1s infinite;">◉</div>
+            <h2>◢ VICTORY ◣</h2>
+            <div style="font-size: 4vw; margin: 20px;">
+                <div>REWARD: +<span id="earnedCoins">100</span> CR</div>
+                <div>SCORE: <span id="finalScore">0</span></div>
+            </div>
+            <div id="unlockMsg" style="color: #f0f; margin-bottom: 20px; display: none;">◢ NEW UNIT UNLOCKED ◣</div>
+            <button class="btn" onclick="nextLevel()">► NEXT STAGE</button>
+            <button class="btn" onclick="showScreen('mainMenu')">► MAIN MENU</button>
+        </div>
+        
+        <!-- Game Over -->
+        <div id="gameOver" class="screen">
+            <h2>◢ SYSTEM FAILURE ◣</h2>
+            <button class="btn" onclick="retryLevel()">► RETRY</button>
+            <button class="btn" onclick="showScreen('mainMenu')">► MAIN MENU</button>
+        </div>
+        
+        <!-- Admin Panel (Password Protected) -->
+        <div id="adminPanel">
+            <h2 style="color: #f0f; text-align: center;">◢ ADMIN INTERFACE ◣</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <input type="password" id="adminPass" placeholder="ENTER ACCESS CODE" style="width: 200px;">
+                <button class="btn" onclick="checkAdminPass()">UNLOCK</button>
+                <button class="btn" onclick="closeAdmin()">CLOSE</button>
+            </div>
+            
+            <div id="adminContent" style="display: none;">
+                <div class="admin-section">
+                    <h3>◢ GAME CONFIG ◣</h3>
+                    <input type="number" id="adminCoins" placeholder="Set Credits">
+                    <input type="number" id="adminLevel" placeholder="Set Max Level (1-200)">
+                    <button class="btn" onclick="applyGameConfig()">APPLY</button>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>◢ UNLOCK ALL ◣</h3>
+                    <button class="btn" onclick="unlockAll()">UNLOCK ALL CHARACTERS</button>
+                    <button class="btn" onclick="unlockAllItems()">UNLOCK ALL ITEMS</button>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>◢ LEVEL EDITOR ◣</h3>
+                    <textarea id="levelData" rows="5" placeholder="Paste level JSON data"></textarea>
+                    <button class="btn" onclick="importLevels()">IMPORT LEVELS</button>
+                    <button class="btn" onclick="exportLevels()">EXPORT LEVELS</button>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>◢ PLAYER DATA ◣</h3>
+                    <textarea id="playerData" rows="5" readonly></textarea>
+                    <button class="btn" onclick="exportPlayerData()">EXPORT SAVE</button>
+                    <button class="btn" onclick="importPlayerData()">IMPORT SAVE</button>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>◢ SYSTEM ◣</h3>
+                    <button class="btn" onclick="clearAllData()">⚠ CLEAR ALL DATA</button>
+                    <button class="btn" onclick="location.reload()">REBOOT SYSTEM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ◢◣ ULTRA-LIGHT OPTIMIZED ENGINE ◢◣
+        
+        // Admin Password - CHANGE THIS TO YOUR SECRET CODE
+        const ADMIN_PASSWORD = 'MJ2026ADMIN';
+        
+        // Optimized Game State
+        const GameState = {
+            coins: 0,
+            currentLevel: 1,
+            maxUnlockedLevel: 1,
+            selectedCharacter: 'mike',
+            characterGender: 'male',
+            musicEnabled: true,
+            soundEnabled: true,
+            ownedWeapons: ['basic'],
+            ownedCostumes: ['default'],
+            equippedWeapon: 'basic',
+            equippedCostume: 'default',
+            adminAccess: false
+        };
+        
+        // Ultra-light level gen (200 levels)
+        const LEVELS = [];
+        for (let i = 1; i <= 200; i++) {
+            LEVELS.push({
+                id: i,
+                enemies: Math.min(2 + Math.floor(i / 25), 5),
+                reward: 50 + (i * 5),
+                boss: i % 50 === 0,
+                speed: 1 + (i * 0.01)
+            });
+        }
+        
+        // Shop items
+        const SHOP_ITEMS = [
+            { id: 'sword', name: 'PLASMA BLADE', price: 300, type: 'weapon', emoji: '◢' },
+            { id: 'hammer', name: 'SONIC HAMMER', price: 600, type: 'weapon', emoji: '▣' },
+            { id: 'gold', name: 'GOLD ARMOR', price: 500, type: 'costume', emoji: '◉' },
+            { id: 'neon', name: 'NEON SUIT', price: 1000, type: 'costume', emoji: '◈' }
+        ];
+        
+        // Performance optimized canvas
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let animationId = null;
+        let lastTime = 0;
+        const TARGET_FPS = 30; // Cap for mobile battery life
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
+        
+        function resize() {
+            canvas.width = Math.min(window.innerWidth, 1280);
+            canvas.height = Math.min(window.innerHeight, 720);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Game objects (pooled for performance)
+        let player = null;
+        let enemies = [];
+        let missiles = [];
+        let particles = [];
+        let gameActive = false;
+        let combo = 0;
+        let score = 0;
+        let frameCount = 0;
+        
+        // Optimized particle system (max 30 particles)
+        const MAX_PARTICLES = 30;
+        class Particle {
+            constructor() {
+                this.active = false;
+            }
+            
+            spawn(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.life = 1;
+                this.color = color;
+                this.active = true;
+            }
+            
+            update() {
+                if (!this.active) return;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1;
+                this.life -= 0.05;
+                if (this.life <= 0) this.active = false;
+            }
+            
+            draw() {
+                if (!this.active) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 3, 3);
+                ctx.globalAlpha = 1;
+            }
+        }
+        
+        // Initialize particle pool
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+            particles.push(new Particle());
+        }
+        
+        function spawnParticle(x, y, color) {
+            for (let p of particles) {
+                if (!p.active) {
+                    p.spawn(x, y, color);
+                    return;
+                }
+            }
+        }
+        
+        // Optimized character class
+        class Character {
+            constructor(x, y, isPlayer = false) {
+                this.x = x;
+                this.y = y;
+                this.isPlayer = isPlayer;
+                this.width = 40;
+                this.height = 50;
+                this.vx = 0;
+                this.vy = 0;
+                this.grounded = false;
+                this.dancing = false;
+                this.danceTimer = 0;
+                this.health = isPlayer ? 100 : 30 + (GameState.currentLevel * 2);
+                this.maxHealth = this.health;
+                this.emoji = isPlayer ? (GameState.characterGender === 'male' ? '◉' : '◈') : '◭';
+                this.color = isPlayer ? '#0ff' : '#f00';
+            }
+            
+            update() {
+                // Physics
+                this.vy += 0.4;
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                const floor = canvas.height - 80;
+                if (this.y + this.height > floor) {
+                    this.y = floor - this.height;
+                    this.vy = 0;
+                    this.grounded = true;
+                }
+                
+                this.x = Math.max(20, Math.min(canvas.width - 60, this.x));
+                this.vx *= 0.85;
+                
+                if (this.dancing) {
+                    this.danceTimer++;
+                    if (this.danceTimer % 10 === 0) {
+                        spawnParticle(this.x + 20, this.y + 50, this.color);
+                    }
+                    if (this.danceTimer > 60) {
+                        this.dancing = false;
+                        this.danceTimer = 0;
+                    }
+                }
+            }
+            
+            draw() {
+                // Simple shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(this.x, this.y + this.height - 5, this.width, 5);
+                
+                // Character
+                ctx.font = '40px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = this.dancing ? 20 : 10;
+                ctx.fillText(this.emoji, this.x + 20, this.y + 40);
+                ctx.shadowBlur = 0;
+                
+                // Health bar (enemies only)
+                if (!this.isPlayer) {
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(this.x, this.y - 10, this.width, 4);
+                    ctx.fillStyle = '#0f0';
+                    ctx.fillRect(this.x, this.y - 10, this.width * (this.health/this.maxHealth), 4);
+                }
+            }
+            
+            jump() {
+                if (this.grounded) {
+                    this.vy = -10;
+                    this.grounded = false;
+                }
+            }
+            
+            move(dir) {
+                this.vx = dir * 4;
+            }
+            
+            dance() {
+                this.dancing = true;
+                this.danceTimer = 0;
+            }
+            
+            takeDamage(amount) {
+                this.health -= amount;
+                spawnParticle(this.x + 20, this.y + 25, '#f00');
+            }
+        }
+        
+        // Optimized missile
+        class Missile {
+            constructor(target) {
+                this.x = Math.random() > 0.5 ? 0 : canvas.width;
+                this.y = target.y + Math.random() * 50;
+                this.target = target;
+                this.speed = 2 + (GameState.currentLevel * 0.05);
+                const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                this.active = true;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (!this.target) return 'active';
+                
+                const dx = this.x - (this.target.x + 20);
+                const dy = this.y - (this.target.y + 25);
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 25) {
+                    if (this.target.dancing && Math.random() > 0.4) {
+                        combo++;
+                        return 'evaded';
+                    } else {
+                        this.target.takeDamage(10);
+                        return 'hit';
+                    }
+                }
+                
+                if (this.x < -50 || this.x > canvas.width + 50) return 'out';
+                return 'active';
+            }
+            
+            draw() {
+                ctx.fillStyle = '#f00';
+                ctx.shadowColor = '#f00';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Game functions
+        function initGame(levelId) {
+            GameState.currentLevel = levelId;
+            const level = LEVELS[levelId - 1];
+            
+            player = new Character(canvas.width/2, canvas.height/2, true);
+            enemies = [];
+            missiles = [];
+            combo = 0;
+            score = 0;
+            gameActive = true;
+            frameCount = 0;
+            
+            for (let i = 0; i < level.enemies; i++) {
+                enemies.push(new Character(100 + Math.random() * (canvas.width - 200), canvas.height/2));
+            }
+            
+            document.getElementById('hud').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex';
+            updateHUD();
+            
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function gameLoop(currentTime) {
+            if (!gameActive) return;
+            
+            const deltaTime = currentTime - lastTime;
+            
+            if (deltaTime >= FRAME_INTERVAL) {
+                lastTime = currentTime - (deltaTime % FRAME_INTERVAL);
+                
+                // Clear with futuristic bg
+                ctx.fillStyle = '#000510';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Grid floor
+                ctx.strokeStyle = 'rgba(0,255,255,0.1)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < canvas.width; i += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, canvas.height - 80);
+                    ctx.lineTo(i - 80, canvas.height);
+                    ctx.stroke();
+                }
+                
+                // Update player
+                if (player) {
+                    player.update();
+                    player.draw();
+                    
+                    if (player.health <= 0) {
+                        gameOver();
+                        return;
+                    }
+                }
+                
+                // Update enemies (max 5 for performance)
+                enemies = enemies.filter(e => {
+                    e.update();
+                    e.draw();
+                    return e.health > 0;
+                });
+                
+                if (enemies.length === 0) {
+                    victory();
+                    return;
+                }
+                
+                // Spawn missiles (limited)
+                if (frameCount % 60 === 0 && missiles.length < 3) {
+                    missiles.push(new Missile(player));
+                }
+                
+                // Update missiles
+                missiles = missiles.filter(m => {
+                    const result = m.update();
+                    if (result === 'active') {
+                        m.draw();
+                        return true;
+                    } else if (result === 'hit') {
+                        updateHUD();
+                    }
+                    return false;
+                });
+                
+                // Update particles
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                
+                frameCount++;
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Controls
+        function move(dir) { if (player) player.move(dir); }
+        function jump() { if (player) player.jump(); }
+        function dance() { 
+            if (player) {
+                player.dance();
+                if (frameCount % 30 < 10) {
+                    combo++;
+                    score += 50;
+                    updateHUD();
+                }
+            }
+        }
+        function attack() {
+            if (!player) return;
+            enemies.forEach(e => {
+                const dist = Math.abs(e.x - player.x);
+                if (dist < 60) {
+                    e.takeDamage(25);
+                    score += 25;
+                }
+            });
+        }
+        
+        // UI Functions
+        function showScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            
+            if (name === 'characterSelect') generateCharacters();
+            else if (name === 'levelSelect') generateLevels();
+            else if (name === 'shop') generateShop();
+            else if (document.getElementById(name)) document.getElementById(name).classList.add('active');
+        }
+        
+        function generateCharacters() {
+            const grid = document.getElementById('characterGrid');
+            grid.innerHTML = '';
+            
+            const chars = [
+                {id: 'mike', gender: 'male', name: 'MIKE', icon: '◉'},
+                {id: 'juls', gender: 'female', name: 'JULS', icon: '◈'},
+                {id: 'dj', gender: 'male', name: 'DJ-X', icon: '◭', lock: 50},
+                {id: 'queen', gender: 'female', name: 'QUEEN', icon: '◮', lock: 100}
+            ];
+            
+            chars.forEach(c => {
+                const div = document.createElement('div');
+                const locked = c.lock && GameState.maxUnlockedLevel < c.lock;
+                div.className = 'character-card' + (locked ? ' locked' : '') + (GameState.selectedCharacter === c.id ? ' selected' : '');
+                div.innerHTML = `<div style="font-size: 8vw;">${locked ? '◼' : c.icon}</div><div>${c.name}</div>${c.lock ? `<small>LOCK ${c.lock}</small>` : ''}`;
+                div.onclick = () => {
+                    if (!locked) {
+                        GameState.selectedCharacter = c.id;
+                        GameState.characterGender = c.gender;
+                        generateCharacters();
+                    }
+                };
+                grid.appendChild(div);
+            });
+        }
+        
+        function generateLevels() {
+            const grid = document.getElementById('levelGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 200; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'level-btn' + (i > GameState.maxUnlockedLevel ? ' locked' : i === GameState.currentLevel ? ' current' : '');
+                btn.textContent = i;
+                btn.disabled = i > GameState.maxUnlockedLevel;
+                btn.onclick = () => {
+                    initGame(i);
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                };
+                grid.appendChild(btn);
+            }
+        }
+        
+        function generateShop() {
+            document.getElementById('shopCoins').textContent = GameState.coins;
+            const container = document.getElementById('shopItems');
+            container.innerHTML = '';
+            
+            SHOP_ITEMS.forEach(item => {
+                const owned = item.type === 'weapon' ? GameState.ownedWeapons.includes(item.id) : GameState.ownedCostumes.includes(item.id);
+                const div = document.createElement('div');
+                div.className = 'shop-item' + (owned ? ' owned' : '');
+                div.innerHTML = `<div style="font-size: 6vw;">${item.emoji}</div><div>${item.name}</div><div style="color: ${owned ? '#0f0' : '#ff0'}">${owned ? 'OWNED' : item.price + ' CR'}</div>`;
+                div.onclick = () => buyItem(item);
+                container.appendChild(div);
+            });
+        }
+        
+        function buyItem(item) {
+            const owned = item.type === 'weapon' ? GameState.ownedWeapons.includes(item.id) : GameState.ownedCostumes.includes(item.id);
+            
+            if (owned) {
+                if (item.type === 'weapon') GameState.equippedWeapon = item.id;
+                else GameState.equippedCostume = item.id;
+                saveGame();
+                generateShop();
+                return;
+            }
+            
+            if (GameState.coins >= item.price) {
+                GameState.coins -= item.price;
+                if (item.type === 'weapon') GameState.ownedWeapons.push(item.id);
+                else GameState.ownedCostumes.push(item.id);
+                saveGame();
+                generateShop();
+            }
+        }
+        
+        function victory() {
+            gameActive = false;
+            cancelAnimationFrame(animationId);
+            
+            const reward = 50 + (GameState.currentLevel * 5) + (combo * 10);
+            GameState.coins += reward;
+            
+            if (GameState.currentLevel >= GameState.maxUnlockedLevel && GameState.maxUnlockedLevel < 200) {
+                GameState.maxUnlockedLevel++;
+            }
+            
+            document.getElementById('earnedCoins').textContent = reward;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('unlockMsg').style.display = (GameState.currentLevel === 50 || GameState.currentLevel === 100) ? 'block' : 'none';
+            
+            saveGame();
+            showScreen('victoryScreen');
+        }
+        
+        function gameOver() {
+            gameActive = false;
+            cancelAnimationFrame(animationId);
+            showScreen('gameOver');
+        }
+        
+        function nextLevel() {
+            if (GameState.currentLevel < 200) {
+                initGame(GameState.currentLevel + 1);
+            } else {
+                showScreen('mainMenu');
+            }
+        }
+        
+        function retryLevel() {
+            initGame(GameState.currentLevel);
+        }
+        
+        function updateHUD() {
+            if (player) document.getElementById('health').textContent = Math.max(0, player.health);
+            document.getElementById('currentLevel').textContent = GameState.currentLevel;
+            document.getElementById('coins').textContent = GameState.coins;
+            document.getElementById('combo').textContent = combo;
+        }
+        
+        function toggleMusic() {
+            GameState.musicEnabled = !GameState.musicEnabled;
+            document.getElementById('musicStatus').textContent = GameState.musicEnabled ? 'ON' : 'OFF';
+        }
+        
+        function toggleSound() {
+            GameState.soundEnabled = !GameState.soundEnabled;
+            document.getElementById('soundStatus').textContent = GameState.soundEnabled ? 'ON' : 'OFF';
+        }
+        
+        function resetProgress() {
+            if (confirm('RESET ALL DATA?')) {
+                localStorage.removeItem('MJ_ULTRA');
+                location.reload();
+            }
+        }
+        
+        function saveGame() {
+            localStorage.setItem('MJ_ULTRA', JSON.stringify(GameState));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('MJ_ULTRA');
+            if (saved) Object.assign(GameState, JSON.parse(saved));
+        }
+        
+        // ◢◣ ADMIN SYSTEM ◢◣
+        
+        // Hidden trigger (tap top-right 5 times)
+        let adminTapCount = 0;
+        document.getElementById('adminTrigger').addEventListener('click', () => {
+            adminTapCount++;
+            if (adminTapCount >= 5) {
+                document.getElementById('adminPanel').classList.add('active');
+                adminTapCount = 0;
+            }
+        });
+        
+        function checkAdminPass() {
+            const input = document.getElementById('adminPass').value;
+            if (input === ADMIN_PASSWORD) {
+                GameState.adminAccess = true;
+                document.getElementById('adminContent').style.display = 'block';
+                document.getElementById('playerData').value = JSON.stringify(GameState, null, 2);
+            } else {
+                alert('ACCESS DENIED');
+            }
+        }
+        
+        function closeAdmin() {
+            document.getElementById('adminPanel').classList.remove('active');
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('adminPass').value = '';
+            GameState.adminAccess = false;
+        }
+        
+        function applyGameConfig() {
+            const coins = parseInt(document.getElementById('adminCoins').value);
+            const level = parseInt(document.getElementById('adminLevel').value);
+            
+            if (!isNaN(coins)) GameState.coins = coins;
+            if (!isNaN(level) && level >= 1 && level <= 200) GameState.maxUnlockedLevel = level;
+            
+            saveGame();
+            alert('CONFIG APPLIED');
+        }
+        
+        function unlockAll() {
+            GameState.maxUnlockedLevel = 200;
+            saveGame();
+            alert('ALL STAGES UNLOCKED');
+        }
+        
+        function unlockAllItems() {
+            GameState.ownedWeapons = ['basic', 'sword', 'hammer'];
+            GameState.ownedCostumes = ['default', 'gold', 'neon'];
+            saveGame();
+            alert('ALL ITEMS UNLOCKED');
+        }
+        
+        function exportLevels() {
+            document.getElementById('levelData').value = JSON.stringify(LEVELS);
+        }
+        
+        function importLevels() {
+            try {
+                const data = JSON.parse(document.getElementById('levelData').value);
+                LEVELS.length = 0;
+                LEVELS.push(...data);
+                alert('LEVELS IMPORTED');
+            } catch(e) {
+                alert('INVALID DATA');
+            }
+        }
+        
+        function exportPlayerData() {
+            document.getElementById('playerData').value = JSON.stringify(GameState, null, 2);
+        }
+        
+        function importPlayerData() {
+            try {
+                const data = JSON.parse(document.getElementById('playerData').value);
+                Object.assign(GameState, data);
+                saveGame();
+                alert('DATA IMPORTED');
+            } catch(e) {
+                alert('INVALID DATA');
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('⚠ DELETE EVERYTHING?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            if (e.key === 'ArrowLeft') move(-1);
+            if (e.key === 'ArrowRight') move(1);
+            if (e.key === 'ArrowUp') jump();
+            if (e.key === ' ') dance();
+            if (e.key === 'z') attack();
+        });
+        
+        // Init
+        loadGame();
+        updateHUD();
+    </script>
+</body>
+</html>
